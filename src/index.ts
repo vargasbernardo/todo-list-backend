@@ -1,7 +1,7 @@
 import express, {Request, Response} from 'express'
 import cors from 'cors'
 import {db} from './database/knex'
-import { TUserDB } from './types'
+import {  TUserDB, TTaskDB } from './types'
 
 const app = express()
 
@@ -137,4 +137,135 @@ app.delete('/users/:id', async (req: Request, res: Response): Promise<void> => {
         
     }
 
+})
+
+// Endpoint GET para todos os usuarios ou usando um query param
+app.get('/tasks', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const q = req.query.q
+        if(q) {
+            const result = await db('tasks').where('title', 'LIKE', `%${q}%`)
+            res.status(200).send(result)
+        } else {
+            const allResults = await db('tasks')
+            res.status(200).send(allResults)
+            
+        }
+
+
+    } catch (error) {
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
+})
+
+// Endpoint POST para criacao de novas tasks
+app.post('/tasks', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const {id, title, description } = req.body
+        const [idExists]: Array<TTaskDB> | undefined = await db('tasks').where('id', id)
+
+        if(idExists) {
+            res.status(400)
+            throw new Error('"id" ja cadastrado')
+        }
+        if(typeof id !== 'string' || typeof title !== 'string' || typeof description !== 'string') {
+            res.status(400)
+            throw new Error('Tipos de dados errados, os dados devem ser do tipo "string".')
+        }
+
+        const newTask: TTaskDB = {
+            id,
+            title,
+            description
+        }
+
+        await db('tasks').insert(newTask)
+
+        res.status(200).send('Task criada com sucesso!')
+
+    } catch (error) {
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        } 
+    }
+})
+
+// Endpoint PUT para edicao das tasks existentes
+app.put('/tasks/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = req.params.id
+        const newId: string = req.body.id
+        const newTitle: string = req.body.title
+        const newDescription: string = req.body.description
+        const [taskToBeUpdated] = await db('tasks').where('id', id)
+
+        if(!taskToBeUpdated) {
+            res.status(404)
+            throw new Error('Task nao encontrada, cheque o id')
+        }
+
+        const editedTask: TTaskDB = {
+            id: newId || taskToBeUpdated.id,
+            title: newTitle || taskToBeUpdated.title,
+            description: newDescription || taskToBeUpdated.description
+        }
+
+        await db('tasks').update(editedTask).where('id', id)
+
+        res.status(200).send('Task updated com sucesso!')
+
+
+
+    } catch (error) {
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        } 
+    }
+})
+
+// Endpoint DELETE para deletar tasks a partir do id
+app.delete('/tasks/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = req.params.id
+        const [taskToBeDeleted]: Array<TTaskDB> | undefined = await db('tasks').where('id', id)
+
+        if(!taskToBeDeleted) {
+            res.status(404)
+            throw new Error('Task nao encontrada, favor checar o "id".')
+        }
+
+        await db('tasks').del().where('id', id)
+        res.status(200).send('Task deletada com sucesso!')
+
+    } catch (error) {
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        } 
+    }
 })
