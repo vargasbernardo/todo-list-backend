@@ -21,7 +21,7 @@ CREATE TABLE users_tasks (
     user_id TEXT NOT NULL,
     task_id TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id),
-    FOREIGN KEY (task_id) REFERENCES tasks (id)
+    FOREIGN KEY (task_id) REFERENCES tasks (id) ON UPDATE CASCADE
 );
 
 -- populando tabelas
