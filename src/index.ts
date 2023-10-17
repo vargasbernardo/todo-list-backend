@@ -120,13 +120,13 @@ app.delete("/users/:id", async (req: Request, res: Response): Promise<void> => {
     const [userToBeDeleted]: Array<TUserDB> | Array<undefined> = await db(
       "users"
     ).where("id", id);
-    console.log(userToBeDeleted);
 
     if (!userToBeDeleted) {
       res.status(404);
       throw new Error('Usuario nao encontrado, favor checar o "id"');
     }
 
+    await db("users_tasks").del().where('user_id', id)
     await db("users").del().where("id", id);
 
     res.status(200).send("Usuario deletado com sucesso");
@@ -262,6 +262,7 @@ app.delete("/tasks/:id", async (req: Request, res: Response): Promise<void> => {
       throw new Error('Task nao encontrada, favor checar o "id".');
     }
 
+    await db("users_tasks").del().where("task_id", id)
     await db("tasks").del().where("id", id);
     res.status(200).send("Task deletada com sucesso!");
   } catch (error) {
